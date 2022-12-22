@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using API.Helpers;
 using API.Middleware;
 using API.Extensions;
+using StackExchange.Redis;
 
 namespace API
 {
@@ -26,21 +27,29 @@ namespace API
             services.AddDbContext<StoreContext>(options =>
             {
                 options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
-            });            
+            });
+
+            services.AddSingleton<IConnectionMultiplexer>(c =>
+            {
+                var configuration = ConfigurationOptions.Parse(_config.GetConnectionString("Redis"),
+                    true);
+                return ConnectionMultiplexer.Connect(configuration);    
+            });        
+
             services.AddAutoMapper(typeof(MappingProfiles));  
             
             services.AddApplicationServices();
 
             services.AddSwaggerDocumentation();
 
-            services.AddCors( opt =>
+            services.AddCors(opt =>
             {
                 opt.AddPolicy("CorsPolicy", policy =>
                 {
-                    policy.AllowAnyHeader().WithOrigins("https://localhost:4200");
-                });
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200");
+                }); 
             });
-            
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -53,6 +62,7 @@ namespace API
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
             app.UseStaticFiles();
 
             app.UseCors("CorsPolicy");

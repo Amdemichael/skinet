@@ -31,6 +31,7 @@ namespace API.Extensions
 
                 };
             });
+            services.AddScoped<IBasketRepository, BasketRepository>();
 
             return services;
         }
