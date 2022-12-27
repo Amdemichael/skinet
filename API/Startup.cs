@@ -8,6 +8,9 @@ using API.Helpers;
 using API.Middleware;
 using API.Extensions;
 using StackExchange.Redis;
+using Infrastructure.Identity;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.AspNetCore.Authentication;
 
 namespace API
 {
@@ -29,6 +32,11 @@ namespace API
                 options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
             });
 
+             services.AddDbContext<AppIdentityDbContext>(options =>
+            {
+                options.UseSqlite(_config.GetConnectionString("IdentityConnection"));
+            });
+
             services.AddSingleton<IConnectionMultiplexer>(c =>
             {
                 var configuration = ConfigurationOptions.Parse(_config.GetConnectionString("Redis"),
@@ -39,6 +47,10 @@ namespace API
             services.AddAutoMapper(typeof(MappingProfiles));  
             
             services.AddApplicationServices();
+
+            services.TryAddSingleton<ISystemClock, SystemClock>();
+
+            services.AddIdentityServices(_config);
 
             services.AddSwaggerDocumentation();
 
@@ -66,6 +78,8 @@ namespace API
             app.UseStaticFiles();
 
             app.UseCors("CorsPolicy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
